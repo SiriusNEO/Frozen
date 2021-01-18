@@ -44,10 +44,10 @@ Widget::Widget(QWidget *parent):QWidget(parent), ui(new Ui::Widget) {
     treeGrowTime = 3*appleTick, gtreeGrowTime = 5*appleTick;
     hungerLoss = 3;
     gameStatus = common0;
-
-    //player->hp = player->hunger = player->materialCnt = player->seedCnt = player->gseedCnt = player->gappleCnt = 9999; //test
-    gameStatus = invincible1;
-
+    /*
+    player->hp = player->hunger = player->materialCnt = player->seedCnt = player->gseedCnt = player->gappleCnt = 9999; //test
+    gameStatus = invincible1; invTime = 99999;
+    */
     gameTimer = new QTimer;
     connect(gameTimer, SIGNAL(timeout()), this, SLOT(update()));
     gameTimer->start(tick);
@@ -55,6 +55,13 @@ Widget::Widget(QWidget *parent):QWidget(parent), ui(new Ui::Widget) {
     dayTimer = new QTimer;
     connect(dayTimer, SIGNAL(timeout()), this, SLOT(dayEvent()));
     dayTimer->start(dayTick);
+
+    /*
+    mediaPlayer = new QMediaPlayer;
+    mediaPlayer->setMedia(QUrl::fromLocalFile(":/res/Spring.mp3"));
+    mediaPlayer->setVolume(30);
+    mediaPlayer->play();
+    */
 }
 
 Widget::~Widget() {
@@ -62,6 +69,7 @@ Widget::~Widget() {
     delete dayTimer;
     delete player;
     delete ui;
+    delete mediaPlayer;
 }
 
 void Widget::dayEvent() {
@@ -114,7 +122,8 @@ void Widget::dayEvent() {
                 for (int j = crossBomb[i]->y; j <= edgeBlockNumY; ++j) if (destroy(crossBomb[i]->x, j, boom34)) break;
                 for (int j = crossBomb[i]->y; j > 0; --j) if (destroy(crossBomb[i]->x, j, boom34)) break;
                 repaint();
-                Wait(50);
+                if (day <= 15) Wait(50);
+                else Wait(15);
                 for (int i = 1; i <= edgeBlockNumX; ++i) for (int j = 1; j <= edgeBlockNumY; ++j)
                     if (mapStatus[i][j] == boom34) mapStatus[i][j] = none0;
                 delete crossBomb[i];
@@ -127,17 +136,12 @@ void Widget::dayEvent() {
                 for (int j = edgeBlockNumX; j > 0; --j)
                     if (destroy(j, laserLauncher[i]->y, zzz35)) break;
                 repaint();
-                Wait(70);
-                for (int i = 1; i <= edgeBlockNumX; ++i) for (int j = 1; j <= edgeBlockNumY; ++j) {
-                    if (mapStatus[i][j] == zzz35 || mapStatus[i][j] == myzzzh38 || mapStatus[i][j] == myzzzv39)
-                        mapStatus[i][j] = none0;
-                    else if (mapStatus[i][j] == chargedwall30) mapStatus[i][j] = transparentwall26;
-                    else if (mapStatus[i][j] == chargedcarpet31) mapStatus[i][j] = transparentcarpet27;
-                    else if (mapStatus[i][j] == chargedpylon41) mapStatus[i][j] = pylon20;
-                    else if (mapStatus[i][j] == chargedprioritypylon42) mapStatus[i][j] = prioritypylon40;
-                    else if (mapStatus[i][j] == chargedmotor33) mapStatus[i][j] = motor23;
-                    else if (mapStatus[i][j] == chargedptree32) mapStatus[i][j] = ptree21;
-                }
+                if (day <= 15) Wait(70);
+                else Wait(20);
+                for (int j = edgeBlockNumX; j > 0; --j)
+                    if (chargedValidater(mapStatus[j][laserLauncher[i]->y]) && poweroff(j, laserLauncher[i]->y)) break;
+                for (int i = 1; i <= edgeBlockNumX; ++i) for (int j = 1; j <= edgeBlockNumY; ++j)
+                    if (mapStatus[i][j] == zzz35 || mapStatus[i][j] == myzzzh38 || mapStatus[i][j] == myzzzv39) mapStatus[i][j] = none0;
                 if (player->inGrid == chargedcarpet31) player->inGrid = transparentcarpet27;
                 delete laserLauncher[i];
                 laserLauncher[i] = nullptr;
@@ -400,7 +404,7 @@ void Widget::keyPressEvent(QKeyEvent *event) {
             switch (mapStatus[player->x][player->y]) {
                 case apple2:player->hunger += 10;break;
                 case gapple3:player->gappleCnt++;break;
-                case rabbit4:player->hp++,player->hunger+=20;break;
+                case rabbit4:player->hp++,player->hunger+=50;break;
                 case alienfruit5:{
                     player->hp += 8;
                     if (gameStatus != invincible1) player->hunger-=100;

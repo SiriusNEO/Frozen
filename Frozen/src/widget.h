@@ -17,6 +17,7 @@
 #include <QDebug>
 #include <QTimer>
 #include <QTime>
+#include <QtMultimedia/QMediaPlayer>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Widget; }
@@ -32,7 +33,7 @@ public:
     inline int Max(int val1, int val2) {return (val1 > val2)?val1:val2;}
     inline int Min(int val1, int val2) {return (val1 < val2)?val1:val2;}
     inline void Wait(int _time) {time_t tmpTime = clock();while (clock() <= tmpTime + _time);}
-    inline std::pair<int, int> randPosition() {
+    std::pair<int, int> randPosition() {
         if (day >= 15) {
             int retX = rand()%edgeBlockNumX+1, retY = rand()%edgeBlockNumY+1;
             int forceEnd = 0;
@@ -150,7 +151,7 @@ public:
             }
         }
     }
-    inline void setObject(int _x,int _y, gridStatusType obj) {
+    void setObject(int _x,int _y, gridStatusType obj) {
         mapStatus[_x][_y] = obj;
         if (obj == tree16) {
             for (int j = 0; j < edgeBlockNumX*edgeBlockNumY; ++j)
@@ -167,7 +168,7 @@ public:
                 }
         }
     }
-    inline void removeObject(int _x,int _y, gridStatusType obj) {
+    void removeObject(int _x,int _y, gridStatusType obj) {
         if (mapStatus[_x][_y] == gleaf44) mapStatus[_x][_y] = river43;
         else mapStatus[_x][_y] = none0;
         if (obj == tree16) {
@@ -187,7 +188,7 @@ public:
                 }
         }
     }
-    inline void randomSetObject(gridStatusType obj) {
+    void randomSetObject(gridStatusType obj) {
         if (obj == crossbomb13) {
             for (int i = 1; i <= crossBombCnt; ++i) {
                 auto randomPos = randPosition();
@@ -277,6 +278,10 @@ public:
                 typ == chargedptree32 || typ == chargedpylon41 || typ == chargedprioritypylon42
                 );
     }
+    inline bool chargedValidater(gridStatusType typ) { //not include cell
+        return (typ == chargedwall30 || typ == chargedmotor33 || typ == chargedptree32 || typ == chargedpylon41 ||
+                typ == chargedcarpet31 || typ == chargedprioritypylon42);
+    }
     inline bool mannualValidater(gridStatusType typ) {
         return (typ >= tree16 && typ != border25 && typ != boom34 && typ != zzz35 && typ != doom36 && typ != snowdoom37 &&
                 typ != myzzzh38 && typ != myzzzv39);
@@ -289,7 +294,7 @@ public:
     inline bool creatureValidater(gridStatusType typ) {
         return (typ == player1 || typ == doggy45 || typ == winterking46);
     }
-    inline void interact(int _x, int _y, faceType dir) {
+    void interact(int _x, int _y, faceType dir) {
         if (mapStatus[_x][_y] == wall18) mapStatus[_x][_y] = transparentwall26;
         else if (mapStatus[_x][_y] == transparentwall26) mapStatus[_x][_y] = wall18;
         else if (mapStatus[_x][_y] == carpet19) mapStatus[_x][_y] = transparentcarpet27;
@@ -299,6 +304,7 @@ public:
         else if (mapStatus[_x][_y] == door24) mapStatus[_x][_y] = opendoor29;
         else if (mapStatus[_x][_y] == opendoor29) mapStatus[_x][_y] = door24;
         else if (mapStatus[_x][_y] == chargedcell28) {
+            mapStatus[_x][_y] = cell22;
             switch (dir) {
                 case up0: {
                     for (int j = _y-1; j > 0; --j) if (destroy(_x, j, myzzzv39)) break;
@@ -319,21 +325,30 @@ public:
             }
             repaint();
             Wait(70);
-            for (int i = 1; i <= edgeBlockNumX; ++i) for (int j = 1; j <= edgeBlockNumY; ++j) {
-                if (mapStatus[i][j] == zzz35 || mapStatus[i][j] == myzzzh38 || mapStatus[i][j] == myzzzv39)
-                    mapStatus[i][j] = none0;
-                else if (mapStatus[i][j] == chargedwall30) mapStatus[i][j] = transparentwall26;
-                else if (mapStatus[i][j] == chargedcarpet31) mapStatus[i][j] = transparentcarpet27;
-                else if (mapStatus[i][j] == chargedpylon41) mapStatus[i][j] = pylon20;
-                else if (mapStatus[i][j] == chargedprioritypylon42) mapStatus[i][j] = prioritypylon40;
-                else if (mapStatus[i][j] == chargedmotor33) mapStatus[i][j] = motor23;
-                else if (mapStatus[i][j] == chargedptree32) mapStatus[i][j] = ptree21;
+            switch (dir) {
+                case up0: {
+                    for (int j = _y-1; j > 0; --j) if (chargedValidater(mapStatus[_x][j]) && poweroff(_x, j)) break;
+                    break;
+                }
+                case left1: {
+                    for (int j = _x-1; j > 0; --j) if (chargedValidater(mapStatus[j][_y]) && poweroff(j, _y)) break;
+                    break;
+                }
+                case down2: {
+                    for (int j = _y+1; j <= edgeBlockNumY; ++j) if (chargedValidater(mapStatus[_x][j]) && poweroff(_x, j)) break;
+                    break;
+                }
+                case right3: {
+                    for (int j = _x+1; j <= edgeBlockNumX; ++j) if (chargedValidater(mapStatus[j][_y]) && poweroff(j, _y)) break;
+                    break;
+                }
             }
+            for (int i = 1; i <= edgeBlockNumX; ++i) for (int j = 1; j <= edgeBlockNumY; ++j)
+                if (mapStatus[i][j] == zzz35 || mapStatus[i][j] == myzzzh38 || mapStatus[i][j] == myzzzv39) mapStatus[i][j] = none0;
             if (player->inGrid == chargedcarpet31) player->inGrid = transparentcarpet27;
-            mapStatus[_x][_y] = cell22;
         }
     }
-    inline void trigger(int _x, int _y) {
+    void trigger(int _x, int _y) {
         if (mapStatus[_x][_y] == pylon20 || mapStatus[_x][_y] == prioritypylon40) {
             if (mapStatus[_x][_y] == pylon20) mapStatus[_x][_y] = chargedpylon41;
             else mapStatus[_x][_y] = chargedprioritypylon42;
@@ -344,7 +359,7 @@ public:
                     else dirPriority[0] = 1;
                     break;
                 }
-                if (!passValidater(mapStatus[_x][i]) && mapStatus[_x][i] != transparentwall26) break;
+                if (!passValidater(mapStatus[_x][i]) && !creatureValidater(mapStatus[_x][i]) &&  mapStatus[_x][i] != transparentwall26) break;
             }
             for (int i = _x-1; i > 0; --i) {
                 if (powerValidater(mapStatus[i][_y])) {
@@ -352,7 +367,7 @@ public:
                     else dirPriority[1] = 1;
                     break;
                 }
-                if (!passValidater(mapStatus[i][_y]) && mapStatus[i][_y] != transparentwall26) break;
+                if (!passValidater(mapStatus[i][_y]) && !creatureValidater(mapStatus[i][_y]) &&  mapStatus[i][_y] != transparentwall26) break;
             }
             for (int i = _y+1; i <= edgeBlockNumY; ++i) {
                 if (powerValidater(mapStatus[_x][i])) {
@@ -360,7 +375,7 @@ public:
                     else dirPriority[2] = 1;
                     break;
                 }
-                if (!passValidater(mapStatus[_x][i]) && mapStatus[_x][i] != transparentwall26) break;
+                if (!passValidater(mapStatus[_x][i]) && !creatureValidater(mapStatus[_x][i]) && mapStatus[_x][i] != transparentwall26) break;
             }
             for (int i = _x+1; i <= edgeBlockNumX; ++i) {
                 if (powerValidater(mapStatus[i][_y])) {
@@ -368,7 +383,7 @@ public:
                     else dirPriority[3] = 1;
                     break;
                 }
-                if (!passValidater(mapStatus[i][_y]) && mapStatus[i][_y] != transparentwall26) break;
+                if (!passValidater(mapStatus[i][_y]) && !creatureValidater(mapStatus[i][_y]) &&  mapStatus[i][_y] != transparentwall26) break;
             }
             for (int k = 2; k >= 1; --k) {
                 if (dirPriority[0] == k) for (int i = _y-1; i > 0; --i) if (destroy(_x, i, myzzzv39)) break;
@@ -399,6 +414,73 @@ public:
             return;
         }
         return;
+    }
+    bool poweroff(int _x, int _y) {
+        if (mapStatus[_x][_y] == chargedpylon41 || mapStatus[_x][_y] == chargedprioritypylon42) {
+            if (mapStatus[_x][_y] == chargedpylon41) mapStatus[_x][_y] = pylon20;
+            else mapStatus[_x][_y] = prioritypylon40;
+            int dirPriority[4] = {0, 0, 0, 0};
+            for (int i = _y-1; i > 0; --i) {
+                if (chargedValidater(mapStatus[_x][i])) {
+                    if (mapStatus[_x][i] == chargedprioritypylon42) dirPriority[0] = 2;
+                    else dirPriority[0] = 1;
+                    break;
+                }
+            }
+            for (int i = _x-1; i > 0; --i) {
+                if (chargedValidater(mapStatus[i][_y])) {
+                    if (mapStatus[i][_y] == chargedprioritypylon42) dirPriority[1] = 2;
+                    else dirPriority[1] = 1;
+                    break;
+                }
+            }
+            for (int i = _y+1; i <= edgeBlockNumY; ++i) {
+                if (chargedValidater(mapStatus[_x][i])) {
+                    if (mapStatus[_x][i] == chargedprioritypylon42) dirPriority[2] = 2;
+                    else dirPriority[2] = 1;
+                    break;
+                }
+            }
+            for (int i = _x+1; i <= edgeBlockNumX; ++i) {
+                if (chargedValidater(mapStatus[i][_y])) {
+                    if (mapStatus[i][_y] == chargedprioritypylon42) dirPriority[3] = 2;
+                    else dirPriority[3] = 1;
+                    break;
+                }
+            }
+            for (int k = 2; k >= 1; --k) {
+                if (dirPriority[0] == k) for (int i = _y-1; i > 0; --i) if (chargedValidater(mapStatus[_x][i])) {
+                    if (poweroff(_x, i)) break;
+                }
+                if (dirPriority[1] == k) for (int i = _x-1; i > 0; --i) if (chargedValidater(mapStatus[i][_y])) {
+                    if (poweroff(i, _y)) break;
+                }
+                if (dirPriority[2] == k) for (int i = _y+1; i <= edgeBlockNumY; ++i) if (chargedValidater(mapStatus[_x][i])) {
+                    if (poweroff(_x, i)) break;
+                }
+                if (dirPriority[3] == k) for (int i = _x+1; i <= edgeBlockNumX; ++i) if (chargedValidater(mapStatus[i][_y])) {
+                    if (poweroff(i, _y)) break;
+                }
+            }
+            return true;
+        }
+        else if (mapStatus[_x][_y] == chargedmotor33) {
+            mapStatus[_x][_y] = motor23;
+            return true;
+        }
+        else if (mapStatus[_x][_y] == chargedptree32) {
+            mapStatus[_x][_y] = ptree21;
+            return true;
+        }
+        else if (mapStatus[_x][_y] == chargedwall30) {
+            mapStatus[_x][_y] = transparentwall26;
+            return false;
+        }
+        else if (mapStatus[_x][_y] == chargedcarpet31) {
+            mapStatus[_x][_y] = transparentcarpet27;
+            return false;
+        }
+        return false;
     }
     //True: stop now
     inline bool destroy(int _x, int _y, gridStatusType typ) {
@@ -533,6 +615,7 @@ private:
     QTimer *gameTimer, *dayTimer;
     gameType gameStatus, gameStatusTmp;
     const int playerInitX = 16, playerInitY = 16;
+    QMediaPlayer* mediaPlayer; //sound effect
 
     //Map and Object
     /*GApple Tree GTree Wall Door Carpet Pylon PTree Cell Motor GLeaf*/
