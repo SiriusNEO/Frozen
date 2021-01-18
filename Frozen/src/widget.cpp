@@ -33,7 +33,6 @@ Widget::Widget(QWidget *parent):QWidget(parent), ui(new Ui::Widget) {
         crossBomb[i] = laserLauncher[i] = catastropheSign[i] = nullptr, treeSet[i] = gtreeSet[i] = nullptr, doggySet[i] = winterKingSet[i] = nullptr;
     player = new Player(playerInitX, playerInitY, 10, 50);
     mapStatus[playerInitX][playerInitY] = player1;
-    //player->materialCnt = player->seedCnt = player->gseedCnt = 999; //test
     for (int i = 0; i <= edgeBlockNumX+1; ++i) mapStatus[i][0] = mapStatus[i][edgeBlockNumY+1] = border25;
     for (int i = 0; i <= edgeBlockNumY+1; ++i) mapStatus[0][i] = mapStatus[edgeBlockNumX+1][i] = border25;
     for (int i = 1; i <= edgeBlockNumY; ++i) mapStatus[edgeBlockNumX/2][i] = river43;
@@ -45,6 +44,9 @@ Widget::Widget(QWidget *parent):QWidget(parent), ui(new Ui::Widget) {
     treeGrowTime = 3*appleTick, gtreeGrowTime = 5*appleTick;
     hungerLoss = 3;
     gameStatus = common0;
+
+    //player->hp = player->hunger = player->materialCnt = player->seedCnt = player->gseedCnt = player->gappleCnt = 9999; //test
+    gameStatus = invincible1;
 
     gameTimer = new QTimer;
     connect(gameTimer, SIGNAL(timeout()), this, SLOT(update()));
@@ -81,7 +83,7 @@ void Widget::dayEvent() {
             if (day % 5 == 0 && laserCnt <= maxLaserCnt) laserCnt ++;
             if (day % 13 == 0 && catastropheCnt <= maxCatastropheCnt) catastropheCnt ++;
         }
-        if (day % 4 == 0) hungerLoss += 3;
+        if (day % 4 == 0) hungerLoss += 1;
         if (day % 10 == 0 && doggyCnt <= maxDoggyCnt) doggyCnt ++;
     }
     if (invTime > 0) {
@@ -90,6 +92,7 @@ void Widget::dayEvent() {
             gameStatus = gameStatusTmp;
         }
     }
+    if (invTime == 0 && gameStatus == invincible1) gameStatus = common0; //fix forever Inv
     if (gameStatus != invincible1 && gameStatus != pause3) {
         if (player->hunger > 0) gameStatus = common0;
         else gameStatus = starve2;
@@ -230,7 +233,6 @@ void Widget::paintEvent(QPaintEvent *event) {
     QFont font2("Comic Sans MS",10,QFont::ExtraLight,false);
     QFont font3("Comic Sans MS",18,QFont::ExtraLight,false);
     QImage landImage, playerImage;
-    throw std::invalid_argument("bomb\n");
     //Draw UI
     painter.drawImage(barX*blockSize, barY*blockSize, QImage("res/bar.png"));
     //Item
@@ -350,7 +352,7 @@ void Widget::paintEvent(QPaintEvent *event) {
         painter.drawImage((player->x+flagX[player->face])*blockSize, (player->y+flagY[player->face])*blockSize, QImage("res/target.png"));
     if (player->inGrid != none0)
         painter.drawImage(player->x*blockSize, player->y*blockSize, QImage(("res/"+objectImage[player->inGrid]).c_str()));
-    if (invTime > 0) {
+    if (gameStatus == invincible1) {
         switch (player->face) {
             case up0:playerImage.load("res/player_u_inv.png");break;
             case left1:playerImage.load("res/player_l_inv.png");break;

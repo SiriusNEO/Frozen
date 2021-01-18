@@ -64,18 +64,18 @@ public:
     }
     void Dijkstra() {
         memset(disData, 127, sizeof disData);
-        memset(inqData, 0, sizeof inqData);
+        memset(visData, 0, sizeof visData);
         disData[player->x][player->y] = 0;
         Q.push((Node){player->x, player->y, 0});
         while (!Q.empty()) {
             Node u = Q.top();Q.pop();
-            inqData[u.x][u.y] = 0;
+            if (visData[u.x][u.y]) continue;
+            visData[u.x][u.y] = true;
             for (int i = 0; i < 4; ++i)
                 if ((passValidater(mapStatus[u.x+flagX[i]][u.y+flagY[i]]) || creatureValidater(mapStatus[u.x+flagX[i]][u.y+flagY[i]]))
-                     && !inqData[u.x+flagX[i]][u.y+flagY[i]] && disData[u.x+flagX[i]][u.y+flagY[i]] > u.dis + 1) {
+                     && !visData[u.x+flagX[i]][u.y+flagY[i]] && disData[u.x+flagX[i]][u.y+flagY[i]] > u.dis + 1) {
                     disData[u.x+flagX[i]][u.y+flagY[i]] = u.dis + 1;
                     Q.push((Node){u.x+flagX[i], u.y+flagY[i], u.dis+1});
-                    inqData[u.x+flagX[i]][u.y+flagY[i]] = true;
                 }
         }
     }
@@ -318,8 +318,7 @@ public:
                 }
             }
             repaint();
-            time_t tmpTime = clock();
-            while (clock() <= tmpTime + 300);
+            Wait(70);
             for (int i = 1; i <= edgeBlockNumX; ++i) for (int j = 1; j <= edgeBlockNumY; ++j) {
                 if (mapStatus[i][j] == zzz35 || mapStatus[i][j] == myzzzh38 || mapStatus[i][j] == myzzzv39)
                     mapStatus[i][j] = none0;
@@ -353,7 +352,7 @@ public:
                     else dirPriority[1] = 1;
                     break;
                 }
-                if (!passValidater(mapStatus[i][_y]) && mapStatus[_x][i] != transparentwall26) break;
+                if (!passValidater(mapStatus[i][_y]) && mapStatus[i][_y] != transparentwall26) break;
             }
             for (int i = _y+1; i <= edgeBlockNumY; ++i) {
                 if (powerValidater(mapStatus[_x][i])) {
@@ -369,7 +368,7 @@ public:
                     else dirPriority[3] = 1;
                     break;
                 }
-                if (!passValidater(mapStatus[i][_y]) && mapStatus[_x][i] != transparentwall26) break;
+                if (!passValidater(mapStatus[i][_y]) && mapStatus[i][_y] != transparentwall26) break;
             }
             for (int k = 2; k >= 1; --k) {
                 if (dirPriority[0] == k) for (int i = _y-1; i > 0; --i) if (destroy(_x, i, myzzzv39)) break;
@@ -387,7 +386,7 @@ public:
             mapStatus[_x][_y] = chargedmotor33;
             interact(_x, _y-1, up0);
             interact(_x-1, _y, left1);
-            interact(_x, _y-1, down2);
+            interact(_x, _y+1, down2);
             interact(_x+1, _y, right3);
             return;
         }
@@ -566,6 +565,6 @@ private:
     //Dij
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> Q;
     int disData[edgeBlockNumX+5][edgeBlockNumY+5];
-    bool inqData[edgeBlockNumX+5][edgeBlockNumY+5];
+    bool visData[edgeBlockNumX+5][edgeBlockNumY+5];
 };
 #endif // WIDGET_H
